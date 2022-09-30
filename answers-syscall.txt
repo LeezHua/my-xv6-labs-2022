@@ -1,0 +1,11 @@
+A1:
+  The usertrap() function
+
+A2:
+  The value represents the syscall number, it determines which syscall to invoke
+
+A3:
+  user mode
+
+A4:
+  

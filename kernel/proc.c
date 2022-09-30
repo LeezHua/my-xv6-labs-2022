@@ -322,6 +322,9 @@ fork(void)
   np->state = RUNNABLE;
   release(&np->lock);
 
+  //addition
+  np->mask = p->mask;
+
   return pid;
 }
 
