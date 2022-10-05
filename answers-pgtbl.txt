@@ -1,0 +1,5 @@
+A1:
+  the uptime() syscall can also be accelerated by adding a uptime to the usyscall page as the ugetpid() does, 
+  and we just need to update it's value every time an interupt occurs
+A2:
+  the pte of page 1 is 0x0000000021fd9417, and it's low-five bits is 01111, which means it is valid, readable, writeable, executable, but you can't access it in the user mode
