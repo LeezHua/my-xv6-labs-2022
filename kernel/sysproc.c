@@ -70,14 +70,48 @@ sys_sleep(void)
 }
 
 
-#ifdef LAB_PGTBL
+// #ifdef LAB_PGTBL
 int
 sys_pgaccess(void)
 {
   // lab pgtbl: your code here.
+  uint64 va;
+  int n;
+  unsigned int abits = 0;
+  uint64 addrabits;
+  pte_t* pte;
+
+  argaddr(0, &va);
+  argint(1, &n);
+  if(n <= 0)
+    return -1;
+  if(n > 32)
+    n = 32;
+  
+  pagetable_t pgtbl = myproc()->pagetable;
+  va = PGROUNDDOWN(va);
+
+  for(int i = 0; i < n; ++i){
+    pte = walk(pgtbl, va + i * PGSIZE, 0);
+    if(pte == 0)
+      return -1;
+    if((*pte & PTE_V) == 0)
+      return -1;
+    if((*pte & PTE_U) == 0)
+      return -1;
+    if(*pte & PTE_A){
+      *pte &= ~(PTE_A);
+      abits |= 1 << i;
+    }
+  }
+  
+  argaddr(2, &addrabits);
+  copyout(pgtbl, addrabits, (char*)(&abits), sizeof(abits));
+
+
   return 0;
 }
-#endif
+// #endif
 
 uint64
 sys_kill(void)
