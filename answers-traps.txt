@@ -1,0 +1,15 @@
+A1:
+  register a0 stores the first arguement to a function and a1 store the second and so forth
+  and a2 holds argument 13 to printf
+
+A2:
+  at line 46, the compiler do some optimization, so the call of f is unfolded and getting 12
+
+A3:
+  function printf located at 0x642
+
+A4:
+  0x38
+
+A5:
+  
