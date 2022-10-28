@@ -681,3 +681,46 @@ procdump(void)
     printf("\n");
   }
 }
+
+// Check if a page is cow page.
+// Return 1 on true, -1 on error, 0 on false.
+int
+cowcheck(pagetable_t pagetable, uint64 va){
+  if(va >= MAXVA)
+    return -1;
+  pte_t* pte = walk(pagetable, va, 0);
+  if(pte == 0)
+    return -1;
+  if((*pte & PTE_V) == 0)
+    return -1;
+  if((*pte & PTE_U) == 0)
+    return -1;
+  if((*pte & PTE_C) == 0)
+    return 0;
+  return 1;
+}
+
+// Alloc memory for a cow page, va must be a
+// cow page. return 0 on success, -1 on error.
+int
+cowalloc(pagetable_t pagetable, uint64 va){
+  uint64 pa, npa, flags;
+  pte_t* pte = walk(pagetable, va, 0);
+
+  pa = PTE2PA(*pte);
+  flags = PTE_FLAGS(*pte);
+  flags &= ~PTE_C;
+  flags |= PTE_W;
+  if(kgetref(pa) > 1){
+    if((npa = (uint64)kalloc()) == 0)
+      return -1;
+    memmove((void*)npa, (void*)pa, PGSIZE);
+    *pte = PA2PTE(npa) | flags;
+    kfree((void*)pa);
+  }
+  else if(kgetref(pa) == 1)
+    *pte = PA2PTE(pa) | flags;
+  else
+    return -1;
+  return 0;
+}

@@ -23,10 +23,32 @@ struct {
   struct run *freelist;
 } kmem;
 
+struct {
+  struct spinlock lock;
+  uint counter[NREF];
+} refcnt;
+
+void
+kaddref(uint64 pa){
+  acquire(&refcnt.lock);
+  ++refcnt.counter[REFINDEX(pa)];
+  release(&refcnt.lock);
+}
+
+uint
+kgetref(uint64 pa){
+  uint n;
+  acquire(&refcnt.lock);
+  n = refcnt.counter[REFINDEX(pa)];
+  release(&refcnt.lock);
+  return n;
+}
+
 void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  initlock(&refcnt.lock, "refcnt");
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -50,6 +72,15 @@ kfree(void *pa)
 
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
+  
+  acquire(&refcnt.lock);
+  if(refcnt.counter[REFINDEX((uint64)pa)] > 1){
+    --refcnt.counter[REFINDEX((uint64)pa)];
+    release(&refcnt.lock);
+    return;
+  }
+  refcnt.counter[REFINDEX((uint64)pa)] = 0;
+  release(&refcnt.lock);
 
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
@@ -78,5 +109,8 @@ kalloc(void)
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
+  
+  if(r)
+    kaddref((uint64)r);
   return (void*)r;
 }
